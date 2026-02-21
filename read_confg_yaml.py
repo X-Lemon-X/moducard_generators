@@ -316,7 +316,8 @@ class ConfigLoader:
         # pass include name so we can record types/messages under that include
         self._load_file(inc_path, visited, as_include=True, include_name=inc)
       else:
-        print(f"Warning: Could not find include '{inc}' in search directories: {self.include_dirs}")
+        raise ValueError(f"Warning: Could not find include '{inc}' in search directories: {self.include_dirs}")
+        
 
     if "hardware" in data: # Module with hardware config
       if as_include:

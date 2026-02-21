@@ -64,7 +64,7 @@ def main():
     if args.output:
       output_dir = Path(args.output)
     else:
-      output_dir = root / ".." / ".." / "generated" 
+      output_dir = Path("generated")  
 
     gen_dummy = args.dummy 
     output_dir_ros = output_dir / "ros"
@@ -108,7 +108,7 @@ def main():
     if args.ros:
       print(f"\n{'='*60}")
       print("\nGenerating ROS2 packages...")
-      generator = ROSPackageGenerator(output_dir)
+      generator = ROSPackageGenerator(output_dir_ros)
       generated = generator.generate_packages_from_loader(loader,gen_dummy)
       print(f"Generated {len(generated)} ROS2 package(s):")
       for pkg_path in generated:

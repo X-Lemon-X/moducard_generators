@@ -1,0 +1,105 @@
+custom_types:
+  geometry_msgs_quaternion:
+    type: struct
+    ros_mapping: "geometry_msgs/Quaternion"
+    readable_name: "Quaternion"
+    description: "Representation of orientation in 3D space"
+    fields:
+      x:
+        var_type: float
+        description: "X component of the quaternion"
+        units: "unitless"
+        default: 0.0
+      y:
+        var_type: float
+        description: "Y component of the quaternion"
+        units: "unitless"
+        default: 0.0
+      z:
+        var_type: float
+        description: "Z component of the quaternion"
+        units: "unitless"
+        default: 0.0
+      w:
+        var_type: float
+        description: "W component of the quaternion"
+        units: "unitless"
+        default: 1.0
+
+  geometry_msgs_vector3:
+    type: struct
+    ros_mapping: "geometry_msgs/Vector3"
+    readable_name: "Vector3"
+    description: "Representation of a vector in 3D space"
+    fields:
+      x:
+        var_type: float
+        description: "X component of the vector"
+        units: "unitless"
+        default: 0.0
+      y:
+        var_type: float
+        description: "Y component of the vector"
+        units: "unitless"
+        default: 0.0
+      z:
+        var_type: float
+        description: "Z component of the vector"
+        units: "unitless"
+        default: 0.0
+
+  sensor_msgs_imu:
+    type: struct
+    ros_mapping: "sensor_msgs/Imu"
+    readable_name: "IMU Data"
+    description: "Inertial Measurement Unit Data"
+    fields:
+      # header:
+      #   var_type: std_msgs_header
+      #   description: "Message header containing timestamp and frame information"
+      orientation:
+        var_type: geometry_msgs_quaternion
+        description: "Orientation as a quaternion (x, y, z, w)"
+        units: "unitless"
+        default: "{0,0,0,1}"
+      # covariance:
+      #   var_type: float[9]
+      #   description: "Covariance matrix for the orientation"
+      #   units: "unitless"
+      #   default: 0.0
+      angular_velocity:
+        var_type: geometry_msgs_vector3
+        description: "Angular velocity (x, y, z)"
+        units: "rad/s"
+        default: "{0,0,0}"
+      # angular_velocity_covariance:
+      #   var_type: float[9]
+      #   description: "Covariance matrix for the angular velocity"
+      #   units: "unitless"
+      #   default: 0.0
+      
+      linear_acceleration:
+        var_type: geometry_msgs_vector3
+        description: "Linear acceleration (x, y, z)"
+        units: "m/s^2"
+        default: "{0,0,0}"
+      # linear_acceleration_covariance:
+      #   var_type: float[9]
+      #   description: "Covariance matrix for the linear acceleration"
+      #   units: "unitless"
+      #   default: 0.0
+      
+    # std_msgs_header:
+    #   type: struct
+    #   ros_mapping: "std_msgs/Header"
+    #   readable_name: "Standard Message Header"
+    #   description: "Standard message header containing timestamp and frame information"
+    #   fields:
+    #     stamp:
+    #       var_type: builtin_time
+    #       description: "Timestamp of the message"
+    #     frame_id:
+    #       var_type: string
+    #       description: "Coordinate frame of the data"
+    #       default: ""  
+

@@ -1,0 +1,23 @@
+include: [basic_module]
+
+hardware:
+  name: base_module_dummy
+  vendor: MM
+  unique_id: 0x0000000000000001 # this will be 64-bit unique identifier fpr the series of the same module
+  hw_revision: 1
+  fw_revision: 1
+  date: 2000-01-01
+  description: "Base module required for all modules"
+  inherit: [basic_module]
+  power_requirements:
+    voltage: 0V
+    current: 0A
+
+messages:
+  configs:
+    dummy_command:
+      readable_name: "Dummy Command"
+      description: "This is a dummy command for testing purposes"
+      var_type: uint8
+      default: 0
+      permission: rw

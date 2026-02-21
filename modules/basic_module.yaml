@@ -1,0 +1,121 @@
+custom_types:
+  device_status:
+    type: enum
+    readable_name: "Device Status"
+    description: "Status of the device"
+    values:
+      0: "OK"
+      1: "WARNING"
+      2: "ERROR"
+      3: "CRITICAL"
+      4: "UNKNOWN"
+      5: "UNCONFIGURED"
+      6: "STOPPED"
+      7: "WAITING"
+
+  device_node_identifier:
+    type: struct
+    readable_name: "Device Identifier"
+    description: "Unique identifier for a device"
+    fields:
+      manufacturer_id:
+        var_type: uint8
+        description: "Node ID"
+        default: 0
+  
+  hardware_type:
+    type: struct
+    readable_name: "Hardware Type"
+    description: "Hardware Type Information"
+    fields:
+      hw_time_stamp:
+        var_type: uint32
+        description: "Hardware timestamp"
+        default: 0
+      hw_revision:
+        var_type: uint16
+        description: "Hardware revision number"
+        default: 0
+      fw_revision:
+        var_type: uint16
+        description: "Firmware revision number"
+        default: 0
+
+  device_identifier:
+    type: struct
+    readable_name: "Device Identifier"
+    description: "Unique Device Identifier"
+    fields:
+      unique_id:
+        var_type: uint64
+        description: "Unique identifier for the device"
+        default: 0
+
+  device_info:
+    type: struct
+    readable_name: "Device Info"
+    description: "Comprehensive Device Information"
+    fields:
+      device_identifier:
+        var_type: device_identifier
+        description: "Unique device identifier"
+        default: {}
+      hardware_type:
+        var_type: hardware_type
+        description: "Hardware type information"
+        default: {}
+
+
+
+      
+messages:
+  configs:
+  # works on all modules configured or not configured, as long as module is connected to the bus
+    discover_devices:
+      id: 0x001
+      readable_name  : "Discover Devices"
+      description: "This will trigger all devices on the bus to respond with their uniq ID that defines the hardware"
+      var_type: uint64
+      permission: r
+
+    # works only on modules that are in configuration mode, which is triggered by the enter_configuration_mode command 
+    set_device_node_id:
+      id: 0x002
+      readable_name : "Set Device Node ID"
+      description: "Set the device node ID of the module"
+      var_type: uint8
+      permission: w
+    
+    # works on all modules although on modules. It will not do anything to modules already in configuration mode 
+    enter_configuration_mode:
+      id: 0x003
+      readable_name : "Enter Configuration Mode"
+      description: "Command to enter configuration mode on all connected modules"
+      var_type: uint8
+      default: 0
+      permission: w
+
+    # only in normal mode
+    get_hardware_type:
+      id: 0x004
+      description: "Device Identifier message"
+      var_type: hardware_type
+      permission: r
+    
+    # only in normal mode
+    ping_module:
+      id: 0x005
+      readable_name : "Ping Module"
+      description: "Ping the module to check if it's alive, the counter will increment on each ping"
+      var_type: uint8
+      default: 0
+      permission: w
+
+    # only in normal mode
+    flash_indicator_led:
+      id: 0x006
+      readable_name : "Flash Indicator LED"
+      description: "Command to flash the indicator LED on the module, useful for locating specific hardware"
+      var_type: bool
+      default: 0
+      permission: w

@@ -1,7 +1,7 @@
-include: [basic_module]
+include: [mcan_basic_module]
 
 hardware:
-  name: base_module_dummy
+  name: mcan_base_module_dummy
   vendor: MM
   unique_id: 0x0000000000000001 # this will be 64-bit unique identifier fpr the series of the same module
   hw_revision: 1

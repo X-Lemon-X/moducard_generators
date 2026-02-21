@@ -1,4 +1,4 @@
-include: [basic_module,ros_types]
+include: [mcan_basic_module,mcan_ros_types]
 
 hardware:
   name: motor_hat
@@ -8,7 +8,7 @@ hardware:
   fw_revision: 1
   date: 2026-01-15
   description: "DC Motor HAT module"
-  inherit: [basic_module]
+  inherit: [mcan_basic_module]
   power_requirements:
     voltage: 48V
     current: 0.1A

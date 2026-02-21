@@ -258,24 +258,80 @@ class ROSPackageGenerator:
         self.cpp_generator = ModuleHeaderGenerator(global_namespace="mcan")
         self.type_registry: Dict[str, str] = {}  # {type_name: package_name}
         self.generated_packages: Set[str] = set()  # Track actually generated package names
+        self.ros_packages: Set[str] = set()  # Packages in ROS environment
+        self.previously_generated: Set[str] = set()  # Packages in generated/ directory
+        self.known_packages: Set[str] = set()  # Union of all known packages
 
         self.generic_dependency_packages = set()  # Track packages that are dependencies but not generated (e.g. ROS standard messages)
 
         # self.generic_dependency_packages.add("yaml-cpp")  # For parameter loading in plugin
         self.generic_dependencies = set()  
         # self.generic_dependencies.add("yaml-cpp")  # For primitive type wrappers
+    
+    def _discover_ros_packages(self) -> None:
+        """Discover packages available in ROS environment."""
+        try:
+            from ament_index_python.packages import get_packages_with_prefixes
+            ros_pkgs = get_packages_with_prefixes()
+            self.ros_packages = set(ros_pkgs.keys())            
+        except ImportError:
+            # ament_index not available (not in ROS env)
+            print("  Warning: ament_index_python not available, ROS package discovery disabled")
+        except Exception as e:
+            print(f"  Warning: ROS package discovery failed: {e}")
+    
+    def _discover_generated_packages(self) -> None:
+        """Discover packages in generated/ directory."""
+        if not self.output_dir.exists():
+            return
+        for package_xml in self.output_dir.rglob("package.xml"):
+            pkg_name = package_xml.parent.name
+            self.previously_generated.add(pkg_name)        
+    
+    def _should_generate_package(self, package_name: str, force: bool, force_all: bool) -> tuple:
+        """
+        Determine if package should be generated.
+        
+        Returns:
+            (should_generate: bool, reason: str)
+        """
+        # Check ROS environment
+        if package_name in self.ros_packages:
+            if force_all:
+                return (True, "force-all (will create duplicate!)")
+            else:
+                return (False, "exists in ROS environment")
+        
+        # Check generated directory
+        if package_name in self.previously_generated:
+            if force or force_all:
+                return (True, "regenerating (force)")
+            else:
+                return (False, "already generated")
+        
+        # New package
+        return (True, "new package")
 
     
-    def generate_packages_from_loader(self, loader: "ConfigLoader",gen_dummy:bool=False) -> List[Path]:
+    def generate_packages_from_loader(self, loader: "ConfigLoader", gen_dummy: bool = False, force: bool = False, force_all: bool = False) -> List[Path]:
         """Generate ROS packages from ConfigLoader.
         
         Args:
             loader: ConfigLoader instance with loaded modules
+            gen_dummy: Generate dummy packages without system dependencies
+            force: Regenerate packages in generated/ directory
+            force_all: Regenerate ALL packages (may create duplicates)
             
         Returns:
             List of paths to generated packages
         """
+        # Discovery phase
+        self._discover_ros_packages()
+        self._discover_generated_packages()
+        self.known_packages = self.ros_packages | self.previously_generated
+        
         generated_packages = []
+        skipped_packages = []
         
         # First pass: Build type registry (map type names to packages)
         for type_module in loader.get_type_modules():
@@ -290,20 +346,49 @@ class ROSPackageGenerator:
         
         # Second pass: Generate packages for TypeModules
         for type_module in loader.get_type_modules():
-            pkg_path = self._generate_type_module_package(type_module, loader,gen_dummy)
+            package_name = f"{type_module.origin}_msgs"
+            
+            should_gen, reason = self._should_generate_package(package_name, force, force_all)
+            
+            if not should_gen:
+                skipped_packages.append((package_name, reason))
+                print(f"  Skipping {package_name} ({reason})")
+                self.known_packages.add(package_name)  # Track as known
+                continue
+            
+            print(f"  Generating {package_name} ({reason})")
+            pkg_path = self._generate_type_module_package(type_module, loader, gen_dummy)
             if pkg_path:
                 generated_packages.append(pkg_path)
-                self.generated_packages.add(f"{type_module.origin}_msgs")
+                self.generated_packages.add(package_name)
+                self.known_packages.add(package_name)
         
         # Third pass: Generate packages for ModuleConfigs
         for module in loader.get_modules():
-            pkg_path = self._generate_module_package(module, loader,gen_dummy)
+            package_name = f"{module.hardware.name}_msgs"
+            
+            should_gen, reason = self._should_generate_package(package_name, force, force_all)
+            
+            if not should_gen:
+                skipped_packages.append((package_name, reason))
+                print(f"  Skipping {package_name} ({reason})")
+                self.known_packages.add(package_name)  # Track as known
+                continue
+            
+            print(f"  Generating {package_name} ({reason})")
+            pkg_path = self._generate_module_package(module, loader, gen_dummy)
             if pkg_path:
                 generated_packages.append(pkg_path)
-                self.generated_packages.add(f"{module.hardware.name}_msgs")
+                self.generated_packages.add(package_name)
+                self.known_packages.add(package_name)
+        
+        # Summary
+        if skipped_packages:
+            print(f"\nSkipped {len(skipped_packages)} package(s)")
+  
         
         return generated_packages
-    
+
     def _generate_type_module_package(self, type_module: "TypeModule", loader: "ConfigLoader",gen_dummy:bool=False) -> Optional[Path]:
         """Generate ROS package for a TypeModule."""
         
@@ -372,8 +457,8 @@ class ROSPackageGenerator:
   
         for include in module.includes:
             dep_pkg = f"{include}_msgs"
-            # Only add if this package was actually generated
-            if dep_pkg in self.generated_packages:
+            # Only add if this package is known (in ROS, generated, or being generated)
+            if dep_pkg in self.known_packages:
                 dependencies.add(dep_pkg)
         
         # Add dependencies from ros_mapping fields

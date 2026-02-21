@@ -9,42 +9,66 @@ from cpp_codegen import ModuleHeaderGenerator
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Generate ROS 2 packages from YAML module configurations"
+        description="""
+ModuCard generator for ROS 2 packages and firmware headers from YAML module configurations.
+
+This tool generates:  
+  - ROS2 plugins for the ModuCard boards.
+  - Firmware drivers for the ModuCard boards.  
+        """,
+        formatter_class=argparse.RawDescriptionHelpFormatter
     )
     parser.add_argument(
         "modules",
         nargs="*",
-        help="YAML module files to process (default: example_module_config.yaml)"
+        help="YAML module configuration files to process"
     )
     parser.add_argument(
         "-o", "--output",
         default=None,
-        help="Output directory for generated packages (default: src/generated/ros)"
+        metavar="DIR",
+        help="output directory for generated packages (default: generated/)"
     )
     parser.add_argument(
         "-i", "--include",
         action="append",
         default=[],
-        help="Additional directories to search for includes (default: src/)"
+        metavar="DIR",
+        help="additional directories to search for YAML includes (can be used multiple times)"
     )
     parser.add_argument(
         "-d", "--dummy",
         action="store_true",
-        help="Generate dummy packages that won't required the main system dependencies (default: False)"
+        help="generate dummy packages without system dependencies (for testing/CI)"
     )
 
     parser.add_argument(
         "-r", "--ros",
         action="store_true",
-        help="Generate ros packages (default: False)"
+        help="generate ROS 2 packages"
     )
 
     parser.add_argument(
         "-f", "--firmware",
         action="store_true",
-        help="Generate firmware packages (default: False)"
-    )    
+        help="generate firmware C++ headers"
+    )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="force regeneration of packages in output directory (skips ROS packages)"
+    )
+    parser.add_argument(
+        "--force-all",
+        action="store_true",
+        help="force regeneration of ALL packages (WARNING: may create duplicates)"
+    )
     args = parser.parse_args()
+    
+    # Validation: can't use both force flags
+    if args.force and args.force_all:
+        print("Error: Cannot use both --force and --force-all")
+        sys.exit(1)
     root = Path(__file__).parent
     
     # Setup paths
@@ -107,9 +131,10 @@ def main():
     # Generate ROS packages
     if args.ros:
       print(f"\n{'='*60}")
-      print("\nGenerating ROS2 packages...")
+      print("\nGenerating ROS2 packages...\n")
       generator = ROSPackageGenerator(output_dir_ros)
-      generated = generator.generate_packages_from_loader(loader,gen_dummy)
+      generated = generator.generate_packages_from_loader(loader, gen_dummy, force=args.force, force_all=args.force_all)
+      print(f"\n{'='*60}")
       print(f"Generated {len(generated)} ROS2 package(s):")
       for pkg_path in generated:
         print(f" - {pkg_path.name}")

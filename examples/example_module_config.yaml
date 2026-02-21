@@ -1,0 +1,94 @@
+include: [basic_module,ros_types]
+
+hardware:
+  name: motor_hat
+  vendor: konar
+  unique_id: 0xaaaa0000aaaa0000 # this will be 64-bit unique identifier fpr the series of the same module
+  hw_revision: 1
+  fw_revision: 1
+  date: 2026-01-15
+  description: "DC Motor HAT module"
+  inherit: [basic_module]
+  power_requirements:
+    voltage: 48V
+    current: 0.1A
+
+custom_types:
+  engine_state:
+    type: enum
+    readable_name: "Engine State Value"
+    description: "Possible states of the engine"
+    values:
+      0: "OFF"
+      1: "IDLE"
+      2: "RUNNING"
+      3: "STALLED"
+  imu_state:
+    type: struct
+    readable_name: "IMU Data Structure"
+    description: "Structure to hold IMU data"
+    fields:
+      imu:
+        var_type: sensor_msgs_imu
+        description: "IMU readings for X, Y, Z axes"
+      state:
+        var_type: engine_state
+        description: "Current state of the engine"
+
+messages:
+  commands: # this section defines commands that can be sent to the module
+    set_motor_position:
+      readable_name: "Set motor position"
+      description: "Command to set the motor position"
+      var_type: float
+      units: "radians"
+      default: 0.0
+      range: [-3.14, 3.14]
+
+  states:
+    current_position:
+      name: "Current Motor Position"
+      description: "Current position of the motor"
+      var_type: float
+      units: "radians"
+      default: 0.0
+
+    motor_state:
+      name: "Engine State"
+      description: "Current state of the engine"
+      var_type: engine_state
+      default: EngineState_t::OFF
+
+    get_imu:
+      name: "IMU Data"
+      description: "Inertial Measurement Unit data"
+      var_type: sensor_msgs_imu
+
+        
+    
+  configs:
+    pid_gain_p:
+      name: "PID Gain P"
+      description: "Proportional gain for the motor PID controller"
+      var_type: float
+      default: 1.0
+      range: [0.0, 10.0]
+      permission: rw
+
+    pid_gain_i:
+      name: "PID Gain I"
+      description: "Integral gain for the motor PID controller"
+      var_type: float
+      default: 0.0
+      range: [0.0, 10.0]
+      permission: rw  
+    
+    pid_gain_d:
+      name: "PID Gain D"
+      description: "Derivative gain for the motor PID controller"
+      var_type: float
+      default: 0.1
+      range: [0.0, 10.0]
+      permission: rw  
+
+

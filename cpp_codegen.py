@@ -108,9 +108,9 @@ class ModuleHeaderGenerator:
       lines.append("#include <cstddef>")
       # super_types.hpp is always in the same directory
       if ros_package_mode:
-          lines.append("#include \"mc_plugin_base/super_types.hpp\"")
+          lines.append("#include \"mc_plugin_base/mc_firmware/super_types.hpp\"")
       else:
-        lines.append("#include \"super_types.hpp\"")
+        lines.append("#include \"mc_firmware/super_types.hpp\"")
       lines.append("")
       
       # Include headers for referenced includes
@@ -378,9 +378,9 @@ class ModuleHeaderGenerator:
       lines.append("#include <tuple>")
       
       if use_ros_include:
-        lines.append("#include \"mc_plugin_base/super_types.hpp\"")
+        lines.append("#include \"mc_plugin_base/mc_firmware/super_types.hpp\"")
       else:
-        lines.append("#include \"super_types.hpp\"")
+        lines.append("#include \"mc_firmware/super_types.hpp\"")
       lines.append("")
       
       # Include types header

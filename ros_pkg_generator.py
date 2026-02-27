@@ -295,6 +295,13 @@ class ROSPackageGenerator:
         Returns:
             (should_generate: bool, reason: str)
         """
+        # Check generated directory
+        if package_name in self.previously_generated:
+            if force or force_all:
+                return (True, "regenerating (force)")
+            else:
+                return (False, "already generated")
+        
         # Check ROS environment
         if package_name in self.ros_packages:
             if force_all:
@@ -302,12 +309,6 @@ class ROSPackageGenerator:
             else:
                 return (False, "exists in ROS environment")
         
-        # Check generated directory
-        if package_name in self.previously_generated:
-            if force or force_all:
-                return (True, "regenerating (force)")
-            else:
-                return (False, "already generated")
         
         # New package
         return (True, "new package")
@@ -734,6 +735,7 @@ class ROSPackageGenerator:
             "float": "std_msgs::msg::Float32",
             "double": "std_msgs::msg::Float64",
             "bool": "std_msgs::msg::Bool",
+            
         }
         
         for prim_type, ros_wrapper in primitive_wrappers.items():
@@ -745,6 +747,21 @@ class ROSPackageGenerator:
             lines.append(f"  }}")
             lines.append("")
         
+        lines.append("""
+  template<float Scale>
+  static inline double
+  mcan_decode_type_to_ros(const FloatInt16_t<Scale>& val)
+  {
+    return (double)val;
+  }
+
+  static inline double
+  mcan_encode_ros_to_type(const double& val)
+  {
+    return (double)val;
+  }
+                         """)
+
         lines.append("  // ========== Custom Type Conversions ==========")
         lines.append("")
         
@@ -794,7 +811,6 @@ class ROSPackageGenerator:
                         else:
                             lines.append(f"    msg.{field_name} = mcan_decode_type_to_ros(val.{field_name});")
                 lines.append(f"    return msg;")
-            
             lines.append(f"  }}")
             lines.append("")
             

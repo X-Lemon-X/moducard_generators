@@ -6,25 +6,29 @@ custom_types:
     description: "Representation of orientation in 3D space"
     fields:
       x:
-        var_type: float
+        var_type: float_int16
         description: "X component of the quaternion"
         units: "unitless"
         default: 0.0
+        arg: 10000.0
       y:
-        var_type: float
+        var_type: float_int16
         description: "Y component of the quaternion"
         units: "unitless"
         default: 0.0
+        arg: 10000.0
       z:
-        var_type: float
+        var_type: float_int16
         description: "Z component of the quaternion"
         units: "unitless"
         default: 0.0
+        arg: 10000.0
       w:
-        var_type: float
+        var_type: float_int16
         description: "W component of the quaternion"
         units: "unitless"
         default: 1.0
+        arg: 10000.0
 
   geometry_msgs_vector3:
     type: struct
@@ -33,20 +37,23 @@ custom_types:
     description: "Representation of a vector in 3D space"
     fields:
       x:
-        var_type: float
+        var_type: float_int16
         description: "X component of the vector"
         units: "unitless"
         default: 0.0
+        arg: 10000.0
       y:
-        var_type: float
+        var_type: float_int16
         description: "Y component of the vector"
         units: "unitless"
         default: 0.0
+        arg: 10000.0
       z:
-        var_type: float
+        var_type: float_int16
         description: "Z component of the vector"
         units: "unitless"
         default: 0.0
+        arg: 10000.0
 
   sensor_msgs_imu:
     type: struct

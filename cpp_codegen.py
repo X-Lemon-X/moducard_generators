@@ -114,10 +114,8 @@ class ModuleHeaderGenerator:
       lines.append("")
       
       # Include headers for referenced includes
-      print(f"CGEN Generating types header for {module_name}, checking includes for referenced headers")
       if includes:
           for inc in includes:
-              print(f"CGEN  Checking include {inc} for C++ header generation")
               if ros_package_mode:
                   # ROS package style: <package_msgs/module_types.hpp>
                   lines.append(f'#include <{inc}_msgs/{inc}_types.hpp>')

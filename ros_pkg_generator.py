@@ -25,8 +25,8 @@ class ROSPackageInfo:
     types: Dict[str, "TypeDefinition"]  # custom types to generate as messages
     messages: Dict[str, "MessageInfo"]  # messages to generate
     dependencies: Set[str]  # other ROS packages this depends on
+    dependencies_extern: Set[str]   # external dependencies (e.g. ROS standard messages)
     module_config: Optional["ModuleConfig"] = None  # original module config for main header generation
-
 
 class ROSMessageGenerator:
     """Generate ROS 2 .msg files from YAML type definitions."""
@@ -407,19 +407,25 @@ class ROSPackageGenerator:
             all_types.update(tm.custom_types)
         for mod in loader.get_modules():
             all_types.update(mod.custom_types)
-        
+        dependencies_extern = set()  
         # Collect dependencies from ros_mapping fields
+        print(f"RPG Generating package for type module {type_module.origin}, checking ros_mapping for dependencies")
         dependencies = self.generic_dependency_packages.copy()  # Start with generic dependencies
+        dependencies_extern = set()  # Track external dependencies separately
+
         for type_def in type_module.custom_types.values():
+            print(f"  Checking type {type_def.name} ")
             if type_def.ros_mapping and '/' in type_def.ros_mapping:
                 pkg_name = type_def.ros_mapping.split('/')[0]
                 if pkg_name != package_name:
-                    dependencies.add(pkg_name)
+                    dependencies_extern.add(pkg_name)
+
         for msg_info in all_messages.values():
+            print(f"  Checking message {msg_info.name} ")
             if msg_info.ros_mapping and '/' in msg_info.ros_mapping:
                 pkg_name = msg_info.ros_mapping.split('/')[0]
                 if pkg_name != package_name:
-                    dependencies.add(pkg_name)
+                    dependencies_extern.add(pkg_name)
         
         pkg_info = ROSPackageInfo(
             name=package_name,
@@ -427,6 +433,7 @@ class ROSPackageGenerator:
             types=type_module.custom_types,
             messages=all_messages,
             dependencies=dependencies,
+            dependencies_extern=dependencies_extern,  # No external dependencies for type modules
             module_config=None  # Type modules don't have full module config
         )
         
@@ -457,17 +464,20 @@ class ROSPackageGenerator:
           dependencies.add("mc_can_driver")  # For ROS plugin system
   
         for include in module.includes:
+            print(f"  Module {module.hardware.name} includes {include}, adding dependency on {include}_msgs")
             dep_pkg = f"{include}_msgs"
             # Only add if this package is known (in ROS, generated, or being generated)
-            if dep_pkg in self.known_packages:
-                dependencies.add(dep_pkg)
+            # if dep_pkg in self.known_packages:
+            dependencies.add(dep_pkg)
         
         # Add dependencies from ros_mapping fields
+        dependencies_extern = set()  # Track external dependencies separately
         for type_def in all_types.values():
+            print(f"  Checking type {type_def.name} for ros_mapping dependencies")
             if type_def.ros_mapping and '/' in type_def.ros_mapping:
                 pkg_name = type_def.ros_mapping.split('/')[0]
                 if pkg_name != package_name:
-                    dependencies.add(pkg_name)
+                    dependencies_extern.add(pkg_name)
         
         pkg_info = ROSPackageInfo(
             name=package_name,
@@ -475,6 +485,7 @@ class ROSPackageGenerator:
             types=module.custom_types,
             messages=all_messages,
             dependencies=dependencies,
+            dependencies_extern=dependencies_extern,   
             module_config=module  # Store module config for main header generation
         )
         
@@ -556,9 +567,11 @@ class ROSPackageGenerator:
 """
         
         # Add dependencies
-        for dep in sorted(pkg_info.dependencies):
+        dep_merged = set(pkg_info.dependencies) | set(pkg_info.dependencies_extern)
+        for dep in sorted(dep_merged ):
             content += f"  <depend>{dep}</depend>\n"
         
+
 
         content += """
   <exec_depend>rosidl_default_runtime</exec_depend>
@@ -590,10 +603,22 @@ class ROSPackageGenerator:
         
         # Collect includes (dependencies without _msgs suffix, excluding ROS packages)
         includes = []
+        print(f"Generating C++ headers for {pkg_info.name}, checking dependencies for includes")
+        # print(f"  Known packages: {sorted(self.known_packages)}")
+        print(f"  Generated packages: {sorted(self.generated_packages)}")
         for dep in sorted(pkg_info.dependencies):
+            print(f"  Checking dependency {dep} for C++ header includes")
+            if dep.endswith("_msgs") : #and dep in self.generated_packages:
+                includes.append(dep.replace("_msgs", ""))
+                print(f"    Added include for {dep}")
+        
+        for dep in sorted(pkg_info.dependencies_extern):
+            print(f"  Checking external dependency {dep} for C++ header includes")
             if dep.endswith("_msgs") and dep in self.generated_packages:
                 includes.append(dep.replace("_msgs", ""))
-        
+                print(f"    Added include for ROS package {dep}")
+
+        print(f"  Final includes for {pkg_info.name}: {includes}")
         # Generate C++ types header using cpp_codegen
         cpp_content = self.cpp_generator.generate_types_header(
             module_name=base_name,
@@ -663,7 +688,9 @@ class ROSPackageGenerator:
                 if '/' in type_def.ros_mapping:
                     pkg_name = type_def.ros_mapping.split('/')[0]
                     msg_name = type_def.ros_mapping.split('/')[1]
-                    lines.append(f"#include <{pkg_name}/msg/{self._to_snake_case(msg_name)}.hpp>")
+                    name = self._to_snake_case(msg_name)
+                    # name= (name[0].upper()) + name[1:]
+                    lines.append(f"#include <{pkg_name}/msg/{name}.hpp>")
                 continue
             msg_name = self.msg_generator._to_camel_case(type_name)
             lines.append(f"#include <{pkg_info.name}/msg/{self._to_snake_case(msg_name)}.hpp>")
@@ -996,7 +1023,8 @@ find_package(pluginlib REQUIRED)
 """
         
         # Add dependency finding
-        for dep in sorted(pkg_info.dependencies):
+        dep_merged = set(pkg_info.dependencies) | set(pkg_info.dependencies_extern)
+        for dep in sorted(dep_merged):
             content += f"find_package({dep} REQUIRED)\n"
         
         for dep in sorted(self.generic_dependencies):
@@ -1016,7 +1044,7 @@ find_package(pluginlib REQUIRED)
             content += "  DEPENDENCIES std_msgs"
             
             # Add dependencies
-            for dep in sorted(pkg_info.dependencies):
+            for dep in sorted(dep_merged):
                 content += f" {dep}"
             
             content += "\n)\n\n"
@@ -1036,9 +1064,9 @@ find_package(pluginlib REQUIRED)
         content += "  $<INSTALL_INTERFACE:include>)\n"
         
         # Add dependencies to the interface library
-        if pkg_info.dependencies:
+        if dep_merged:
             content += f"ament_target_dependencies({base_name}_cpp_headers INTERFACE"
-            for dep in sorted(pkg_info.dependencies):
+            for dep in dep_merged:
                 if dep.endswith("_msgs"):
                     content += f" {dep}\n"
             content += ")\n"
@@ -1078,7 +1106,7 @@ find_package(pluginlib REQUIRED)
           content += f"    pluginlib\n"
           content += f"    yaml-cpp\n"
           # content += f"    {base_name}_cpp_headers\n"
-          for dep in sorted(pkg_info.dependencies):
+          for dep in sorted(dep_merged):
               if dep.endswith("_msgs"):
                   content += f"    {dep}\n"
           content += "\n)\n\n"

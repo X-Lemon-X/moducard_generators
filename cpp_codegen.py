@@ -114,8 +114,10 @@ class ModuleHeaderGenerator:
       lines.append("")
       
       # Include headers for referenced includes
+      print(f"CGEN Generating types header for {module_name}, checking includes for referenced headers")
       if includes:
           for inc in includes:
+              print(f"CGEN  Checking include {inc} for C++ header generation")
               if ros_package_mode:
                   # ROS package style: <package_msgs/module_types.hpp>
                   lines.append(f'#include <{inc}_msgs/{inc}_types.hpp>')
@@ -563,7 +565,7 @@ class ModuleHeaderGenerator:
       
       # Generate get_write_callbacks()
       if not use_ros_include:
-        if writable_messages:
+        # if writable_messages:
             lines.append("    auto get_write_callbacks() {")
             lines.append("        return std::make_tuple(")
             for i, (group, msg_name, field_name, msg_info) in enumerate(writable_messages):
@@ -573,7 +575,7 @@ class ModuleHeaderGenerator:
             lines.append("    }")
             lines.append("")
       else:
-        if writable_messages:
+        # if writable_messages:
             lines.append("    auto get_write_variables() {")
             lines.append("        return std::make_tuple(")
             for i, (group, msg_name, field_name, msg_info) in enumerate(writable_messages):
@@ -586,53 +588,53 @@ class ModuleHeaderGenerator:
       # Generate get_read_variables()
       readable_messages = [(g, mn, fn, mi) for g, mn, fn, mi in all_messages if mi.permission_read]
       
-      if readable_messages:
-          lines.append("    auto get_read_variables() {")
-          lines.append("        return std::make_tuple(")
-          for i, (group, msg_name, field_name, msg_info) in enumerate(readable_messages):
-              comma = "," if i < len(readable_messages) - 1 else ""
-              lines.append(f"            &McCanSlaveInterface_t::{field_name}{comma}")
-          lines.append("        );")
-          lines.append("    }")
-          lines.append("")
+      # if readable_messages:
+      lines.append("    auto get_read_variables() {")
+      lines.append("        return std::make_tuple(")
+      for i, (group, msg_name, field_name, msg_info) in enumerate(readable_messages):
+          comma = "," if i < len(readable_messages) - 1 else ""
+          lines.append(f"            &McCanSlaveInterface_t::{field_name}{comma}")
+      lines.append("        );")
+      lines.append("    }")
+      lines.append("")
       
       # Generate get_state_variables()
       state_messages = [(g, mn, fn, mi) for g, mn, fn, mi in all_messages if g == "states"]
       
-      if state_messages:
-          lines.append("    auto get_state_variables() {")
-          lines.append("        return std::make_tuple(")
-          for i, (group, msg_name, field_name, msg_info) in enumerate(state_messages):
-              comma = "," if i < len(state_messages) - 1 else ""
-              lines.append(f"            &McCanSlaveInterface_t::{field_name}{comma}")
-          lines.append("        );")
-          lines.append("    }")
-          lines.append("")
+      # if state_messages:
+      lines.append("    auto get_state_variables() {")
+      lines.append("        return std::make_tuple(")
+      for i, (group, msg_name, field_name, msg_info) in enumerate(state_messages):
+          comma = "," if i < len(state_messages) - 1 else ""
+          lines.append(f"            &McCanSlaveInterface_t::{field_name}{comma}")
+      lines.append("        );")
+      lines.append("    }")
+      lines.append("")
       
       # Generate get_command_variables()
       command_messages = [(g, mn, fn, mi) for g, mn, fn, mi in all_messages if g == "commands"]
       
-      if command_messages:
-          lines.append("    auto get_command_variables() {")
-          lines.append("        return std::make_tuple(")
-          for i, (group, msg_name, field_name, msg_info) in enumerate(command_messages):
-              comma = "," if i < len(command_messages) - 1 else ""
-              lines.append(f"            &McCanSlaveInterface_t::{field_name}{comma}")
-          lines.append("        );")
-          lines.append("    }")
-          lines.append("")
+      # if command_messages:
+      lines.append("    auto get_command_variables() {")
+      lines.append("        return std::make_tuple(")
+      for i, (group, msg_name, field_name, msg_info) in enumerate(command_messages):
+          comma = "," if i < len(command_messages) - 1 else ""
+          lines.append(f"            &McCanSlaveInterface_t::{field_name}{comma}")
+      lines.append("        );")
+      lines.append("    }")
+      lines.append("")
       
       # Generate get_config_variables()
       config_messages = [(g, mn, fn, mi) for g, mn, fn, mi in all_messages if g == "configs"]
       
-      if config_messages:
-          lines.append("    auto get_config_variables() {")
-          lines.append("        return std::make_tuple(")
-          for i, (group, msg_name, field_name, msg_info) in enumerate(config_messages):
-              comma = "," if i < len(config_messages) - 1 else ""
-              lines.append(f"            &McCanSlaveInterface_t::{field_name}{comma}")
-          lines.append("        );")
-          lines.append("    }")
+      # if config_messages:
+      lines.append("    auto get_config_variables() {")
+      lines.append("        return std::make_tuple(")
+      for i, (group, msg_name, field_name, msg_info) in enumerate(config_messages):
+          comma = "," if i < len(config_messages) - 1 else ""
+          lines.append(f"            &McCanSlaveInterface_t::{field_name}{comma}")
+      lines.append("        );")
+      lines.append("    }")
       
       lines.append("};")
       
